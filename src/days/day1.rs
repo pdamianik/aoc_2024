@@ -1,9 +1,8 @@
-use const_it::slice;
 use eyre::eyre;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: &str = slice!(file!(), 12..13);
+const DAY: Day = Day(1);
 
 pub fn parse(input: &str) -> eyre::Result<(Vec<usize>, Vec<usize>)> {
     let values = input.lines()
@@ -51,12 +50,11 @@ pub fn process_part2((column1, column2): &(Vec<usize>, Vec<usize>)) -> eyre::Res
 }
 
 pub async fn run() -> eyre::Result<()> {
-    let day: Day = DAY.parse()?;
-    let day1_span = span!(Level::INFO, "", "{}", day);
+    let day1_span = span!(Level::INFO, "", "{}", DAY);
     async {
-        info!("Running {day}");
+        info!("Running {DAY}");
 
-        let raw_input = super::get_input(day).await?;
+        let raw_input = super::get_input(DAY).await?;
         trace!(raw_input);
 
         let input = parse(&raw_input)?;
@@ -64,7 +62,7 @@ pub async fn run() -> eyre::Result<()> {
 
         let result1 = process_part1(&input)?;
         let result2 = process_part2(&input)?;
-        println!("{day} result:");
+        println!("{DAY} result:");
         println!("  part 1: {result1}");
         println!("  part 2: {result2}");
         Ok(())

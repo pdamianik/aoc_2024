@@ -31,7 +31,6 @@ name = "aoc_2024"
 version = "0.1.0"
 dependencies = [
  "color-eyre",
- "const-it",
  "eyre",
  "reqwest",
  "tokio",
@@ -131,12 +130,6 @@ dependencies = [
  "tracing-core",
  "tracing-error",
 ]
-
-[[package]]
-name = "const-it"
-version = "0.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2cb6b2bb0b3b03d18eb4feb1b0fe49df04ece2e656bbfdd77ea62ca111a1ba9"
 
 [[package]]
 name = "cookie"
