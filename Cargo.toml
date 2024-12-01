@@ -1,0 +1,17 @@
+[package]
+name = "aoc_2024"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+eyre = "0.6.12"
+color-eyre = { version = "0.6.3", features = ["capture-spantrace", "color-spantrace"] }
+reqwest = { version = "0.12.9", features = ["cookies"] }
+const-it = "0.2.0"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+tokio = { version = "1.41.1", features = ["full"] }
+
+[[bin]]
+name = "day1"
+path = "src/days/day1.rs"
