@@ -6,6 +6,8 @@ use reqwest::cookie::Jar;
 use tracing_subscriber::EnvFilter;
 
 pub mod days;
+mod day1;
+mod day2;
 
 const CLIENT: LazyLock<Client> = LazyLock::new(|| {
     let jar = Arc::new(Jar::default());
@@ -31,9 +33,18 @@ fn setup() -> eyre::Result<()> {
 
 #[tokio::main]
 pub async fn main() -> eyre::Result<()> {
-    setup()?;
+    color_eyre::install()?;
+
+    let subscriber = tracing_subscriber::FmtSubscriber::builder()
+        .with_env_filter(EnvFilter::default())
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .wrap_err("Failed to set default tracing subscriber")?;
+    // setup()?;
 
     days::day1::run().await?;
+    days::day2::run().await?;
 
     Ok(())
 }

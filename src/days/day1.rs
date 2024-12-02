@@ -93,9 +93,3 @@ mod test {
         assert_eq!("31", result2);
     }
 }
-
-#[tokio::main]
-pub async fn main() -> eyre::Result<()> {
-    crate::setup()?;
-    Ok(())
-}
