@@ -1,5 +1,9 @@
+pub mod days;
+mod util;
+
 #[tokio::main]
 pub async fn main() -> eyre::Result<()> {
-    crate::setup()?;
-    Ok(())
+    util::setup()?;
+
+    days::day1::run().await
 }

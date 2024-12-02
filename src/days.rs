@@ -75,7 +75,7 @@ pub async fn get_input(day: Day) -> eyre::Result<String> {
     if let Ok(input) = input {
         Ok(input)
     } else {
-        let response = crate::CLIENT.get(format!("https://adventofcode.com/2024/day/{}/input", *day))
+        let response = crate::util::CLIENT.get(format!("https://adventofcode.com/2024/day/{}/input", *day))
             .header(ACCEPT, "text/plain")
             .send().await
             .context(format!("Failed to request {day} input file"))?;
