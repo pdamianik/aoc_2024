@@ -3,7 +3,6 @@ use std::sync::{Arc, LazyLock};
 use eyre::WrapErr;
 use reqwest::{Client, Url};
 use reqwest::cookie::Jar;
-use tracing_subscriber::EnvFilter;
 
 pub mod days;
 mod day1;
@@ -21,27 +20,14 @@ const CLIENT: LazyLock<Client> = LazyLock::new(|| {
 fn setup() -> eyre::Result<()> {
     color_eyre::install()?;
 
-    let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_env_filter(EnvFilter::default())
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)
-        .wrap_err("Failed to set default tracing subscriber")?;
+    tracing_subscriber::fmt::init();
 
     Ok(())
 }
 
 #[tokio::main]
 pub async fn main() -> eyre::Result<()> {
-    color_eyre::install()?;
-
-    let subscriber = tracing_subscriber::FmtSubscriber::builder()
-        .with_env_filter(EnvFilter::default())
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber)
-        .wrap_err("Failed to set default tracing subscriber")?;
-    // setup()?;
+    setup()?;
 
     days::day1::run().await?;
     days::day2::run().await?;

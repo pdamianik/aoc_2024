@@ -70,8 +70,9 @@ pub async fn get_input(day: Day) -> eyre::Result<String> {
     }
 
     let input_file = input_dir.join(day.filename());
+    let input = std::fs::read_to_string(&input_file);
 
-    if let Ok(input) = std::fs::read_to_string(&input_file) {
+    if let Ok(input) = input {
         Ok(input)
     } else {
         let response = crate::CLIENT.get(format!("https://adventofcode.com/2024/day/{}/input", *day))

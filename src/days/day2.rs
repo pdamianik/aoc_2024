@@ -94,7 +94,7 @@ pub fn process_part2(reports: &[Vec<usize>]) -> eyre::Result<String> {
 }
 
 pub async fn run() -> eyre::Result<()> {
-    let day1_span = span!(Level::INFO, "", "{}", DAY);
+    let day_span = span!(Level::ERROR, "", "{}", DAY);
     async {
         info!("Running {DAY}");
 
@@ -111,7 +111,7 @@ pub async fn run() -> eyre::Result<()> {
         println!("  part 2: {result2}");
         Ok(())
     }
-        .instrument(day1_span)
+        .instrument(day_span.or_current())
         .await
 }
 
