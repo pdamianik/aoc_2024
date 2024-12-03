@@ -9,6 +9,7 @@ use reqwest::StatusCode;
 
 pub mod day1;
 pub mod day2;
+pub mod day3;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, PartialEq, Eq)]
 #[repr(transparent)]
@@ -52,12 +53,6 @@ impl Deref for Day {
     fn deref(&self) -> &Self::Target {
         &self.0
     }
-}
-
-#[cfg(test)]
-pub fn get_example_input(day: Day) -> eyre::Result<String> {
-    let input = std::fs::read_to_string(format!("input/{}.example.in", day.filename()))?;
-    Ok(input)
 }
 
 pub async fn get_input(day: Day) -> eyre::Result<String> {
