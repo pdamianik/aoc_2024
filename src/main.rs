@@ -12,15 +12,18 @@ pub async fn main() -> eyre::Result<()> {
         day2,
         day3,
         day4,
+        day5,
     ) = join!(
         tokio::spawn(days::day1::run()),
         tokio::spawn(days::day2::run()),
         tokio::spawn(days::day3::run()),
         tokio::spawn(days::day4::run()),
+        tokio::spawn(days::day5::run()),
     );
 
-    day1.unwrap()
-        .and(day2.unwrap())
-        .and(day3.unwrap())
-        .and(day4.unwrap())
+    day1?
+        .and(day2?)
+        .and(day3?)
+        .and(day4?)
+        .and(day5?)
 }
