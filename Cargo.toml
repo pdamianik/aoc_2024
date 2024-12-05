@@ -11,6 +11,7 @@ tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 tokio = { version = "1.41.1", features = ["full"] }
 itertools = "0.13.0"
+owo-colors = "4.1.0"
 
 [[bin]]
 name = "day1"
@@ -23,3 +24,7 @@ path = "src/day2.rs"
 [[bin]]
 name = "day3"
 path = "src/day3.rs"
+
+[[bin]]
+name = "day4"
+path = "src/day4.rs"
