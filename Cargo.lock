@@ -30,6 +30,7 @@ dependencies = [
 name = "aoc_2024"
 version = "0.1.0"
 dependencies = [
+ "array-init",
  "color-eyre",
  "eyre",
  "find_all",
@@ -41,6 +42,12 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
 ]
+
+[[package]]
+name = "array-init"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d62b7694a562cdf5a74227903507c56ab2cc8bdd1f781ed5cb4cf9c9f810bfc"
 
 [[package]]
 name = "atomic-waker"

@@ -173,7 +173,8 @@
              cargo-binstall
              cargo-expand
              openssl
-           ];
+             perf-tools
+          ];
          };
       });
 }
