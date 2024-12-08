@@ -13,6 +13,8 @@ pub mod day3;
 pub mod day4;
 pub mod day5;
 pub mod day6;
+pub mod day7;
+mod util;
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, PartialEq, Eq)]
 #[repr(transparent)]

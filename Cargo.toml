@@ -13,6 +13,7 @@ tokio = { version = "1.41.1", features = ["full"] }
 itertools = "0.13.0"
 owo-colors = "4.1.0"
 find_all = "2.0.0"
+rand = "0.8.5"
 
 [[bin]]
 name = "day1"
@@ -37,3 +38,7 @@ path = "src/day5.rs"
 [[bin]]
 name = "day6"
 path = "src/day6.rs"
+
+[[bin]]
+name = "day7"
+path = "src/day7.rs"
