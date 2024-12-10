@@ -1,3 +1,4 @@
+use std::time::SystemTime;
 use eyre::eyre;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
@@ -60,11 +61,15 @@ pub async fn run() -> eyre::Result<()> {
         let input = parse(&raw_input)?;
         debug!(?input);
 
+        let start1 = SystemTime::now();
         let result1 = process_part1(&input)?;
+        let end1 = SystemTime::now();
+        let start2 = SystemTime::now();
         let result2 = process_part2(&input)?;
+        let end2 = SystemTime::now();
         println!("{DAY} result:");
-        println!("  part 1: {result1}");
-        println!("  part 2: {result2}");
+        println!("  part 1: {result1} in {:?}", end1.duration_since(start1).unwrap());
+        println!("  part 2: {result2} in {:?}", end2.duration_since(start2).unwrap());
         Ok(())
     }
         .instrument(day_span.or_current())

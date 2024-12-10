@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::time::SystemTime;
 use itertools::Itertools;
 use owo_colors::OwoColorize;
 use tracing::{debug, info, Instrument, Level, span, trace};
@@ -116,7 +117,7 @@ pub fn process_part1(input: &Input) -> eyre::Result<String> {
     let [south, north] = search(&borrowed_cols);
     let [south_east, north_west] = search(&borrowed_diagonal_se);
 
-    println!("{}", visualize1(&input, &north, &north_east, &east, &south_east, &south, &south_west, &west, &north_west));
+    // println!("{}", visualize1(&input, &north, &north_east, &east, &south_east, &south, &south_west, &west, &north_west));
 
     let result = [north, north_east, east, south_east, south, south_west, west, north_west].iter()
         .map(|occurrences| occurrences.len())
@@ -125,6 +126,7 @@ pub fn process_part1(input: &Input) -> eyre::Result<String> {
     Ok(result.to_string())
 }
 
+#[allow(dead_code)]
 fn visualize1(text: &[&str],
               north: &[(usize, usize)],
               north_east: &[(usize, usize)],
@@ -314,11 +316,12 @@ pub fn process_part2(input: &Input) -> eyre::Result<String> {
         }
     }
 
-    println!("{}", visualize2(input, &result));
+    // println!("{}", visualize2(input, &result));
 
     Ok(result.len().to_string())
 }
 
+#[allow(dead_code)]
 fn visualize2(text: &[&str], positions: &[(usize, usize)]) -> String {
     let cols = text[0].len();
     let rows = text.len();
@@ -359,11 +362,15 @@ pub async fn run() -> eyre::Result<()> {
         let input = parse(&raw_input)?;
         debug!(?input);
 
+        let start1 = SystemTime::now();
         let result1 = process_part1(&input)?;
+        let end1 = SystemTime::now();
+        let start2 = SystemTime::now();
         let result2 = process_part2(&input)?;
+        let end2 = SystemTime::now();
         println!("{DAY} result:");
-        println!("  part 1: {result1}");
-        println!("  part 2: {result2}");
+        println!("  part 1: {result1} in {:?}", end1.duration_since(start1).unwrap());
+        println!("  part 2: {result2} in {:?}", end2.duration_since(start2).unwrap());
         Ok(())
     }
         .instrument(day_span.or_current())

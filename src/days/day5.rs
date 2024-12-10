@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::num::ParseIntError;
+use std::time::SystemTime;
 use eyre::{anyhow, eyre};
 use itertools::Itertools;
 use tracing::{debug, info, Instrument, Level, span, trace};
@@ -220,11 +221,15 @@ pub async fn run() -> eyre::Result<()> {
         let input = parse(&raw_input)?;
         debug!(?input);
 
-        println!("{DAY} result:");
+        let start1 = SystemTime::now();
         let result1 = process_part1(&input)?;
-        println!("  part 1: {result1}");
+        let end1 = SystemTime::now();
+        let start2 = SystemTime::now();
         let result2 = process_part2(&input)?;
-        println!("  part 2: {result2}");
+        let end2 = SystemTime::now();
+        println!("{DAY} result:");
+        println!("  part 1: {result1} in {:?}", end1.duration_since(start1).unwrap());
+        println!("  part 2: {result2} in {:?}", end2.duration_since(start2).unwrap());
         Ok(())
     }
         .instrument(day_span.or_current())

@@ -1,6 +1,7 @@
 use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::str::FromStr;
+use std::time::SystemTime;
 use itertools::Itertools;
 use owo_colors::OwoColorize;
 use tracing::{debug, info, Instrument, Level, span, trace};
@@ -416,21 +417,21 @@ pub fn process_part2(input: &Input) -> eyre::Result<String> {
             let tmp = new_map.char_map[position];
             new_map.char_map[position] = '#';
             let movement = movement_map(&new_map);
-            #[cfg(debug_assertions)]
-            match &movement {
+            // #[cfg(debug_assertions)]
+            // match &movement {
                 // Ok(map) | Err(map) => {
                 //     println!("{}", visualize_paths(&new_map, &map, input.position.width, Some(position), None, None, None))
                 // },
-                Err(map) => {
-                    println!("{}", visualize_paths(&new_map, &map, input.position.width, Some(position), None, None, None));
-                    println!();
-                },
+                // Err(map) => {
+                    // println!("{}", visualize_paths(&new_map, &map, input.position.width, Some(position), None, None, None));
+                    // println!();
+                // },
                 // Ok(map) => {
                 //     println!("{}", visualize_paths(&new_map, &map, input.position.width, Some(position), None, None, None));
                 //     println!();
                 // },
-                _ => (),
-            }
+                // _ => (),
+            // }
             new_map.char_map[position] = tmp;
             (position, movement)
         })
@@ -451,11 +452,15 @@ pub async fn run() -> eyre::Result<()> {
         let input = raw_input.parse()?;
         debug!(?input);
 
+        let start1 = SystemTime::now();
         let result1 = process_part1(&input)?;
+        let end1 = SystemTime::now();
+        let start2 = SystemTime::now();
         let result2 = process_part2(&input)?;
+        let end2 = SystemTime::now();
         println!("{DAY} result:");
-        println!("  part 1: {result1}");
-        println!("  part 2: {result2}");
+        println!("  part 1: {result1} in {:?}", end1.duration_since(start1).unwrap());
+        println!("  part 2: {result2} in {:?}", end2.duration_since(start2).unwrap());
         Ok(())
     }
         .instrument(day_span.or_current())
