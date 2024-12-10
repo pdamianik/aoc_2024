@@ -1,11 +1,20 @@
 use std::str::FromStr;
-use eyre::{anyhow, WrapErr};
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
 const DAY: Day = Day(todo!());
 
-type Input = ();
+pub struct Input {
+
+}
+
+impl FromStr for Input {
+    type Err = eyre::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        todo!()
+    }
+}
 
 pub fn process_part1(input: &Input) -> eyre::Result<usize> {
     let result: usize = todo!();
