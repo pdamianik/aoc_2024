@@ -7,7 +7,7 @@ use owo_colors::OwoColorize;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(6);
+pub const DAY: Day = Day(6);
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct Rotation(u8);
@@ -189,12 +189,12 @@ impl Position {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Map {
+pub struct Input {
     char_map: Vec<char>,
     position: Position,
 }
 
-impl Map {
+impl Input {
     pub fn step(&mut self) -> Option<usize> {
         let new_position = self.position.look()?;
         if self.char_map[new_position] == '#' {
@@ -206,7 +206,7 @@ impl Map {
     }
 }
 
-impl FromStr for Map {
+impl FromStr for Input {
     type Err = eyre::Report;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -230,8 +230,6 @@ impl FromStr for Map {
         })
     }
 }
-
-type Input = Map;
 
 fn movement_map(input: &Input) -> Result<Vec<u8>, Vec<u8>> {
     let mut map = input.clone();

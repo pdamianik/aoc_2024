@@ -5,7 +5,7 @@ use eyre::eyre;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(9);
+pub const DAY: Day = Day(9);
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct FileBlock {

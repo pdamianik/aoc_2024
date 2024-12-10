@@ -5,9 +5,9 @@ use eyre::{anyhow, WrapErr};
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(3);
+pub const DAY: Day = Day(3);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 #[non_exhaustive]
 pub enum Instruction {
     Mul(u16, u16),
@@ -97,30 +97,39 @@ impl FromStr for Instruction {
     }
 }
 
-pub fn parse(input: &str) -> eyre::Result<Input> {
-    let mut instructions = Vec::new();
-    let mut start = 0;
-    while start < input.len() {
-        match input[start..].parse::<Instruction>() {
-            Ok(instruction) => {
-                debug!(?instruction);
-                start += instruction.len();
-                instructions.push(instruction);
-            },
-            Err(err) => {
-                start += 1;
-                trace!(?err)
-            },
-        }
-    }
-
-    Ok(instructions)
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Input {
+    instructions: Vec<Instruction>,
 }
 
-type Input = Vec<Instruction>;
+impl FromStr for Input {
+    type Err = eyre::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut instructions = Vec::new();
+        let mut start = 0;
+        while start < s.len() {
+            match s[start..].parse::<Instruction>() {
+                Ok(instruction) => {
+                    debug!(?instruction);
+                    start += instruction.len();
+                    instructions.push(instruction);
+                },
+                Err(err) => {
+                    start += 1;
+                    trace!(?err)
+                },
+            }
+        }
+
+        Ok(Self {
+            instructions,
+        })
+    }
+}
 
 pub fn process_part1(input: &Input) -> eyre::Result<String> {
-    let result = input.iter()
+    let result = input.instructions.iter()
         .filter_map(|instruction|
             match instruction {
                 &Instruction::Mul(a, b) => Some(a as usize * b as usize),
@@ -133,7 +142,7 @@ pub fn process_part1(input: &Input) -> eyre::Result<String> {
 }
 
 pub fn process_part2(input: &Input) -> eyre::Result<String> {
-    let filtered_instructions = input.iter()
+    let filtered_instructions = input.instructions.iter()
         .scan(true, |execute, instruction| {
             match instruction {
                 Instruction::Mul(_, _) if *execute => Some(instruction),
@@ -150,10 +159,12 @@ pub fn process_part2(input: &Input) -> eyre::Result<String> {
         })
         .filter(|instruction| !instruction.is_noop())
         .cloned()
-        .collect();
+        .collect::<Vec<_>>();
     debug!(?filtered_instructions);
 
-    let result = process_part1(&filtered_instructions)?;
+    let result = process_part1(&Input {
+        instructions: filtered_instructions,
+    })?;
 
     Ok(result.to_string())
 }
@@ -166,7 +177,7 @@ pub async fn run() -> eyre::Result<()> {
         let raw_input = super::get_input(DAY).await?;
         trace!(raw_input);
 
-        let input = parse(&raw_input)?;
+        let input = raw_input.parse()?;
         debug!(?input);
 
         let start1 = SystemTime::now();
@@ -191,13 +202,13 @@ mod test {
     #[test]
     pub fn test_example() {
         let raw_input = r#"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))"#;
-        let input = parse(&raw_input).unwrap();
+        let input = raw_input.parse().unwrap();
 
         let result = process_part1(&input).unwrap();
         assert_eq!("161", result);
 
         let raw_input = r#"xmul(2,4)&mul[3,7]!^don't()_mul(5,5)+mul(32,64](mul(11,8)undo()?mul(8,5))"#;
-        let input = parse(&raw_input).unwrap();
+        let input = raw_input.parse().unwrap();
 
         let result = process_part2(&input).unwrap();
         assert_eq!("48", result);

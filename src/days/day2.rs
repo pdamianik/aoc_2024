@@ -1,27 +1,39 @@
+use std::str::FromStr;
 use std::time::SystemTime;
 use eyre::{anyhow, WrapErr};
 use itertools::Itertools;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(2);
+pub const DAY: Day = Day(2);
 
-pub fn parse(input: &str) -> eyre::Result<Vec<Vec<usize>>> {
-    let values = input.lines()
-        .enumerate()
-        .map(|(row, line)| {
-            line.split_whitespace().into_iter()
-                .enumerate()
-                .map(|(col, val)|
-                    val.parse::<usize>()
-                        .wrap_err(anyhow!("Failed to parse {} number in row {row}", col + 1))
-                )
-                .collect::<Result<Vec<_>, _>>()
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Input {
+    reports: Vec<Vec<usize>>,
+}
+
+impl FromStr for Input {
+    type Err = eyre::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let reports = s.lines()
+            .enumerate()
+            .map(|(row, line)| {
+                line.split_whitespace().into_iter()
+                    .enumerate()
+                    .map(|(col, val)|
+                        val.parse::<usize>()
+                            .wrap_err(anyhow!("Failed to parse {} number in row {row}", col + 1))
+                    )
+                    .collect::<Result<Vec<_>, _>>()
+            })
+            .filter(|line| if let Ok(line) = line { !line.is_empty() } else { true })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(Self {
+            reports,
         })
-        .filter(|line| if let Ok(line) = line { !line.is_empty() } else { true })
-        .collect::<Result<Vec<_>, _>>()?;
-
-    Ok(values)
+    }
 }
 
 fn unsafe_index<'a>(report: impl Iterator<Item = &'a usize>) -> Option<[usize; 4]> {
@@ -61,8 +73,8 @@ fn tolerate(report: &[usize]) -> bool {
     }
 }
 
-pub fn process_part1(reports: &[Vec<usize>]) -> eyre::Result<String> {
-    let safe_count = reports.iter()
+pub fn process_part1(input: &Input) -> eyre::Result<String> {
+    let safe_count = input.reports.iter()
         .map(|report| unsafe_index(report.iter()).is_none())
         .enumerate()
         .inspect(|&(row, safe)| if safe {
@@ -76,8 +88,8 @@ pub fn process_part1(reports: &[Vec<usize>]) -> eyre::Result<String> {
     Ok(safe_count.to_string())
 }
 
-pub fn process_part2(reports: &[Vec<usize>]) -> eyre::Result<String> {
-    let safe_count = reports.iter()
+pub fn process_part2(input: &Input) -> eyre::Result<String> {
+    let safe_count = input.reports.iter()
         .enumerate()
         .map(|(row, report)| {
             trace!("{row}");
@@ -102,7 +114,7 @@ pub async fn run() -> eyre::Result<()> {
         let raw_input = super::get_input(DAY).await?;
         trace!(raw_input);
 
-        let input = parse(&raw_input)?;
+        let input = raw_input.parse()?;
         debug!(?input);
 
         let start1 = SystemTime::now();
@@ -134,7 +146,7 @@ mod test {
         8 6 4 4 1
         1 3 6 7 9
         "#;
-        let input = parse(&raw_input).unwrap();
+        let input = raw_input.parse().unwrap();
 
         let result1 = process_part1(&input).unwrap();
         assert_eq!("2", result1);

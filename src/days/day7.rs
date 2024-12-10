@@ -8,7 +8,7 @@ use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 use crate::days::util::Lines;
 
-const DAY: Day = Day(7);
+pub const DAY: Day = Day(7);
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
 pub enum Operator {
@@ -98,7 +98,7 @@ impl FromStr for Equation {
     }
 }
 
-type Input = Lines<Equation>;
+pub type Input = Lines<Equation>;
 
 pub async fn process_part1(input: &Input) -> eyre::Result<(usize, Vec<Equation>)> {
     let handles = input.iter()

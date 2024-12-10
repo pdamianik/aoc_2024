@@ -11,7 +11,7 @@ use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 use crate::days::util::{Coordinate, ParsedGrid};
 
-const DAY: Day = Day(10);
+pub const DAY: Day = Day(10);
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct MapPosition<'map> {

@@ -2,15 +2,16 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::num::ParseIntError;
+use std::str::FromStr;
 use std::time::SystemTime;
 use eyre::{anyhow, eyre};
 use itertools::Itertools;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(5);
+pub const DAY: Day = Day(5);
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Graph {
     sorted_nodes: Vec<u8>,
     node_mapping: Vec<u8>,
@@ -119,49 +120,58 @@ impl Graph {
     }
 }
 
-pub fn parse(input: &str) -> eyre::Result<Input> {
-    let (raw_rules, raw_manual) = input.split_once("\n\n")
-        .ok_or(eyre!("Failed to split rules and manuals"))?;
-
-    let rules = raw_rules.lines()
-        .map(|line| {
-            let (prior, posterior) = line.split_once('|')
-                .ok_or(anyhow!("Failed to split rule at `|`"))?;
-            let prior: u8 = prior.parse()?;
-            let posterior: u8 = posterior.parse()?;
-            Ok((prior, posterior))
-        })
-        .collect::<eyre::Result<Vec<_>>>()?;
-
-    let manuals: Vec<Vec<u8>> = raw_manual.lines()
-        .map(|line| line
-            .split(',')
-            .map(|page| page.parse()
-                .map_err(|err: ParseIntError| err.into())
-            )
-            .collect::<eyre::Result<_>>()
-        )
-        .collect::<eyre::Result<_>>()?;
-
-    let result = manuals.into_iter()
-        .map(|manual| {
-            let lookup: HashSet<u8> = HashSet::from_iter(manual.iter().cloned());
-            let rules = rules.iter()
-                .filter(|(from, to)| lookup.contains(from) && lookup.contains(to))
-                .cloned()
-                .collect::<Vec<_>>();
-            let graph = Graph::new(&rules);
-            (graph, manual)
-        })
-        .collect();
-
-    Ok(result)
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Input {
+    manuals: Vec<(Graph, Vec<u8>)>,
 }
 
-type Input = Vec<(Graph, Vec<u8>)>;
+impl FromStr for Input {
+    type Err = eyre::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let (raw_rules, raw_manual) = s.split_once("\n\n")
+            .ok_or(eyre!("Failed to split rules and manuals"))?;
+
+        let rules = raw_rules.lines()
+            .map(|line| {
+                let (prior, posterior) = line.split_once('|')
+                    .ok_or(anyhow!("Failed to split rule at `|`"))?;
+                let prior: u8 = prior.parse()?;
+                let posterior: u8 = posterior.parse()?;
+                Ok((prior, posterior))
+            })
+            .collect::<eyre::Result<Vec<_>>>()?;
+
+        let manuals: Vec<Vec<u8>> = raw_manual.lines()
+            .map(|line| line
+                .split(',')
+                .map(|page| page.parse()
+                    .map_err(|err: ParseIntError| err.into())
+                )
+                .collect::<eyre::Result<_>>()
+            )
+            .collect::<eyre::Result<_>>()?;
+
+        let manuals = manuals.into_iter()
+            .map(|manual| {
+                let lookup: HashSet<u8> = HashSet::from_iter(manual.iter().cloned());
+                let rules = rules.iter()
+                    .filter(|(from, to)| lookup.contains(from) && lookup.contains(to))
+                    .cloned()
+                    .collect::<Vec<_>>();
+                let graph = Graph::new(&rules);
+                (graph, manual)
+            })
+            .collect();
+
+        Ok(Self {
+            manuals,
+        })
+    }
+}
 
 pub fn process_part1(input: &Input) -> eyre::Result<String> {
-    let result: usize = input.iter()
+    let result: usize = input.manuals.iter()
         .map(|(graph, manuals)| {
             let mut graph = graph.clone();
             graph.add_transitive();
@@ -186,7 +196,7 @@ pub fn process_part1(input: &Input) -> eyre::Result<String> {
 }
 
 pub fn process_part2(input: &Input) -> eyre::Result<String> {
-    let result: usize = input.iter()
+    let result: usize = input.manuals.iter()
         .map(|(graph, manuals)| {
             let mut graph = graph.clone();
             graph.add_transitive();
@@ -218,7 +228,7 @@ pub async fn run() -> eyre::Result<()> {
         let raw_input = super::get_input(DAY).await?;
         trace!(raw_input);
 
-        let input = parse(&raw_input)?;
+        let input = raw_input.parse()?;
         debug!(?input);
 
         let start1 = SystemTime::now();
@@ -271,7 +281,7 @@ mod test {
 61,13,29
 97,13,75,29,47
 "#;
-        let input = parse(&raw_input).unwrap();
+        let input = raw_input.parse().unwrap();
 
         let result1 = process_part1(&input).unwrap();
         assert_eq!("143", result1);

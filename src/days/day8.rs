@@ -8,7 +8,7 @@ use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 use crate::days::util::Grid;
 
-const DAY: Day = Day(8);
+pub const DAY: Day = Day(8);
 
 fn char_to_index(character: char) -> u8 {
     match character {

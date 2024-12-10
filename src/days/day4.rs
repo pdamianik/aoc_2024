@@ -1,19 +1,20 @@
 use std::cmp::min;
+use std::str::FromStr;
 use std::time::SystemTime;
 use itertools::Itertools;
 use owo_colors::OwoColorize;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(4);
+pub const DAY: Day = Day(4);
 
-fn transpose(input: &[&str]) -> Vec<String> {
+fn transpose(input: &[String]) -> Vec<String> {
     (0..input[0].len())
         .map(|i| input.iter().map(|inner| inner.chars().nth(i).unwrap()).collect::<String>())
         .collect()
 }
 
-fn rotate_pos(input: &[&str]) -> Vec<String> {
+fn rotate_pos(input: &[String]) -> Vec<String> {
     let mut results = Vec::new();
     for start_row in 0..input.len() {
         let diagonal_length = min(start_row + 1, input[0].len());
@@ -34,7 +35,7 @@ fn rotate_pos(input: &[&str]) -> Vec<String> {
     results
 }
 
-fn rotate_neg(input: &[&str]) -> Vec<String> {
+fn rotate_neg(input: &[String]) -> Vec<String> {
     let mut results = Vec::new();
     for start_col in (0..input[0].len()).rev() {
         let diagonal_length = min(input[0].len() - start_col, input.len());
@@ -68,7 +69,7 @@ fn find_all(text: &str, needle: &str) -> Vec<usize> {
     indices
 }
 
-fn search(input: &[&str]) -> [Vec<(usize, usize)>; 2] {
+fn search(input: &[String]) -> [Vec<(usize, usize)>; 2] {
     let occurrences = input.iter()
         .enumerate()
         .map(|(rowi, row)|
@@ -92,30 +93,37 @@ fn search(input: &[&str]) -> [Vec<(usize, usize)>; 2] {
     [occurrences, reverse]
 }
 
-pub fn parse(input: &str) -> eyre::Result<Input> {
-    let lines = input.lines()
-        .filter(|line| !line.trim().is_empty())
-        .collect::<Vec<_>>();
-
-    Ok(lines)
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Input {
+    lines: Vec<String>,
 }
 
-type Input<'a> = Vec<&'a str>;
+impl FromStr for Input {
+    type Err = eyre::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let lines = s.lines()
+            .filter(|line| !line.trim().is_empty())
+            .map(|line| line.to_string())
+            .collect::<Vec<_>>();
+
+        Ok(Self {
+            lines,
+        })
+    }
+}
 
 pub fn process_part1(input: &Input) -> eyre::Result<String> {
-    let diagonal_ne = rotate_pos(&input);
-    let borrowed_diagonal_ne = diagonal_ne.iter().map(String::as_str).collect::<Vec<_>>();
+    let diagonal_ne = rotate_pos(&input.lines);
 
-    let cols = transpose(&input);
-    let borrowed_cols = cols.iter().map(String::as_str).collect::<Vec<_>>();
-    let diagonal_se = rotate_neg(&input);
-    let borrowed_diagonal_se = diagonal_se.iter().map(String::as_str).collect::<Vec<_>>();
+    let cols = transpose(&input.lines);
+    let diagonal_se = rotate_neg(&input.lines);
 
-    let [east, west] = search(&input);
-    let [north_east, south_west] = search(&borrowed_diagonal_ne);
+    let [east, west] = search(&input.lines);
+    let [north_east, south_west] = search(&diagonal_ne);
 
-    let [south, north] = search(&borrowed_cols);
-    let [south_east, north_west] = search(&borrowed_diagonal_se);
+    let [south, north] = search(&cols);
+    let [south_east, north_west] = search(&diagonal_se);
 
     // println!("{}", visualize1(&input, &north, &north_east, &east, &south_east, &south, &south_west, &west, &north_west));
 
@@ -300,9 +308,9 @@ fn check_cross(chars: &[char], _rows: usize, cols: usize, row: usize, col: usize
 }
 
 pub fn process_part2(input: &Input) -> eyre::Result<String> {
-    let rows = input.len();
-    let cols = input[0].len();
-    let chars = input.iter()
+    let rows = input.lines.len();
+    let cols = input.lines[0].len();
+    let chars = input.lines.iter()
         .map(|line| line.chars())
         .flatten()
         .collect::<Vec<_>>();
@@ -359,7 +367,7 @@ pub async fn run() -> eyre::Result<()> {
         let raw_input = super::get_input(DAY).await?;
         trace!(raw_input);
 
-        let input = parse(&raw_input)?;
+        let input = raw_input.parse()?;
         debug!(?input);
 
         let start1 = SystemTime::now();
@@ -394,7 +402,7 @@ SAXAMASAAA
 MAMMMXMMMM
 MXMXAXMASX
 "#;
-        let input = parse(&raw_input).unwrap();
+        let input = raw_input.parse().unwrap();
 
         let result = process_part1(&input).unwrap();
         assert_eq!("18", result);

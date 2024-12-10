@@ -25,7 +25,7 @@ rand = "0.8.5"
 array-init = "2.1.0"
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = { version = "0.5.1", features = ["async_tokio"] }
 
 [[bin]]
 name = "day1"
@@ -56,6 +56,10 @@ name = "day7"
 path = "src/day7.rs"
 
 [[bin]]
+name = "day8"
+path = "src/day8.rs"
+
+[[bin]]
 name = "day9"
 path = "src/day9.rs"
 
@@ -64,9 +68,41 @@ name = "day10"
 path = "src/day10.rs"
 
 [[bench]]
+name = "day1"
+harness = false
+
+[[bench]]
+name = "day2"
+harness = false
+
+[[bench]]
+name = "day3"
+harness = false
+
+[[bench]]
+name = "day4"
+harness = false
+
+[[bench]]
+name = "day5"
+harness = false
+
+[[bench]]
+name = "day6"
+harness = false
+
+[[bench]]
+name = "day7"
+harness = false
+
+[[bench]]
+name = "day8"
+harness = false
+
+[[bench]]
 name = "day9"
 harness = false
 
-[[bin]]
-name = "day8"
-path = "src/day8.rs"
+[[bench]]
+name = "day10"
+harness = false
