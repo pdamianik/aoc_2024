@@ -1,4 +1,4 @@
-pub mod days;
+use aoc_2024::days;
 mod util;
 
 #[tokio::main]

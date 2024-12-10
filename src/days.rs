@@ -2,10 +2,12 @@ use std::fmt::{Display, Formatter};
 use std::ops::Deref;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::{Arc, LazyLock};
 use eyre::{eyre, WrapErr};
 
 use reqwest::header::ACCEPT;
-use reqwest::StatusCode;
+use reqwest::{Client, StatusCode, Url};
+use reqwest::cookie::Jar;
 
 pub mod day1;
 pub mod day2;
@@ -17,6 +19,15 @@ pub mod day7;
 pub mod day8;
 pub mod day9;
 mod util;
+
+pub const CLIENT: LazyLock<Client> = LazyLock::new(|| {
+    let jar = Arc::new(Jar::default());
+    jar.add_cookie_str(&format!("session={}", std::env::var("AOC_SESSION").unwrap()), &Url::from_str("https://adventofcode.com/").unwrap());
+    Client::builder()
+        .cookie_store(true)
+        .cookie_provider(jar)
+        .build().unwrap()
+});
 
 #[derive(Debug, Copy, Clone, Ord, PartialOrd, PartialEq, Eq)]
 #[repr(transparent)]
@@ -77,7 +88,7 @@ pub async fn get_input(day: Day) -> eyre::Result<String> {
     if let Ok(input) = input {
         Ok(input)
     } else {
-        let response = crate::util::CLIENT.get(format!("https://adventofcode.com/2024/day/{}/input", *day))
+        let response = CLIENT.get(format!("https://adventofcode.com/2024/day/{}/input", *day))
             .header(ACCEPT, "text/plain")
             .send().await
             .context(format!("Failed to request {day} input file"))?;

@@ -139,7 +139,7 @@ pub fn process_part2(input: &Input) -> eyre::Result<usize> {
         while let Some(filler) = filler_sizes[0..space as usize]
             .iter_mut()
             .filter(|filler| filler.len() > 0)
-            .filter(|filler| filler.last().unwrap().index > empty.index)
+            .filter(|filler| filler.last().unwrap().index > empty.index) // GIANT THANK YOU TO https://www.reddit.com/r/adventofcode/comments/1hajykk/comment/m19cr94/?utm_source=share&utm_medium=web3x&utmhttps://www.reddit.com/r/adventofcode/comments/1hajykk/comment/m19cr94/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button_name=web3xcss&utm_term=1&utm_content=share_button
             .max_by(|a, b| a.last().unwrap().id.cmp(&b.last().unwrap().id)) {
             // println!("Trying to fill {empty:?} with space {space}");
             let filler = filler.pop().unwrap();
@@ -268,11 +268,11 @@ mod test {
     #[test]
     pub fn test_evil_part2() {
         // input from https://www.reddit.com/r/adventofcode/comments/1haauty/2024_day_9_part_2_bonus_test_case_that_might_make/
-        let input = include_str!("day9_evil1.in").parse().unwrap();
+        let input = include_str!("../../test/input/day9_evil1.in").parse().unwrap();
         let result = process_part2(&input).unwrap();
         assert_eq!(97898222299196, result);
 
-        let input = include_str!("day9_evil2.in").parse().unwrap();
+        let input = include_str!("../../test/input/day9_evil2.in").parse().unwrap();
         let result = process_part2(&input).unwrap();
         assert_eq!(5799706413896802, result);
     }

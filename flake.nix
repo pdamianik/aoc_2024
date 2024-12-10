@@ -160,6 +160,7 @@
             pkgs.cargo-binstall
             pkgs.cargo-expand
             pkgs.perf-tools
+            pkgs.gnuplot
           ];
         };
 #         devShells.default = pkgs.mkShell {
