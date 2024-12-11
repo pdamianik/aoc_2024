@@ -2,7 +2,7 @@ use std::str::FromStr;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
-const DAY: Day = Day(todo!());
+pub const DAY: Day = Day(todo!());
 
 pub struct Input {
 
