@@ -14,24 +14,26 @@ pub struct Stone {
 }
 
 impl Stone {
-    pub fn evolve(&mut self) -> Option<Self> {
-        match self.engraving {
-            0 => {
-                self.engraving = 1;
-                None
-            },
-            engraving if engraving.ilog10() % 2 == 1 => {
-                let half = 10usize.pow(engraving.ilog10() / 2 + 1);
-                self.engraving = engraving / half;
-                Some(Self {
-                    engraving: engraving % half,
-                })
-            },
-            _ => {
-                self.engraving *= 2024;
-                None
+    pub fn evolve(&mut self, cache: &mut HashMap<Stone, (Stone, Option<Stone>)>) -> Option<Self> {
+        let (stone, new_stone) = cache.entry(*self).or_insert_with(|| {
+            match self.engraving {
+                0 => (Stone { engraving: 1 }, None),
+                engraving if engraving.ilog10() % 2 == 1 => {
+                    let half = 10usize.pow(engraving.ilog10() / 2 + 1);
+                    (
+                        Stone { engraving: engraving / half },
+                        Some(Self {
+                            engraving: engraving % half,
+                        })
+                    )
+                },
+                engraving => {
+                    (Stone { engraving: engraving * 2024 }, None)
+                }
             }
-        }
+        });
+        *self = *stone;
+        *new_stone
     }
 }
 
@@ -72,12 +74,12 @@ impl FromStr for Input {
 
 pub fn process_part1(input: &Input) -> eyre::Result<usize> {
     let mut stones = input.stones.clone();
-    // let mut cache: HashMap<Stone, (Stone, Option<Stone>)> = HashMap::new();
+    let mut cache: HashMap<Stone, (Stone, Option<Stone>)> = HashMap::new();
 
     let mut acc = Vec::new();
     for _ in 0..25 {
         for stone in &mut stones {
-            if let Some(new_stone) = stone.evolve() {
+            if let Some(new_stone) = stone.evolve(&mut cache) {
                 acc.push(new_stone);
             }
         }
@@ -91,11 +93,12 @@ pub fn process_part1(input: &Input) -> eyre::Result<usize> {
 pub fn process_part2(input: &Input) -> eyre::Result<usize> {
     let mut stones: HashMap<Stone, usize> = input.stones.iter().cloned().counts();
     let mut new_stones: HashMap<Stone, usize> = HashMap::with_capacity(stones.len());
+    let mut cache: HashMap<Stone, (Stone, Option<Stone>)> = HashMap::new();
 
     for _ in 0..75 {
         for (stone, &count) in &stones {
             let mut stone = *stone;
-            if let Some(new_stone) = stone.evolve() {
+            if let Some(new_stone) = stone.evolve(&mut cache) {
                 insert_stone_count(&mut new_stones, count, new_stone);
             }
             insert_stone_count(&mut new_stones, count, stone);
