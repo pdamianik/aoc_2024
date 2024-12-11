@@ -133,6 +133,6 @@ criterion_group!(name = benches;
     targets =
     bench_parsing_official, bench_part1_official, bench_part2_official, bench_part1_official_with_parsing, bench_part2_official_with_parsing,
     bench_parsing_evil1, bench_part1_evil1, bench_part2_evil1, bench_part1_evil1_with_parsing, bench_part2_evil1_with_parsing,
-    bench_parsing_evil2, bench_part1_evil2, bench_part1_evil2, bench_part1_evil2_with_parsing, bench_part2_evil2_with_parsing,
+    bench_parsing_evil2, bench_part1_evil2, bench_part2_evil2, bench_part1_evil2_with_parsing, bench_part2_evil2_with_parsing,
 );
 criterion_main!(benches);

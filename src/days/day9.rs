@@ -121,10 +121,9 @@ pub fn process_part1(input: &Input) -> eyre::Result<usize> {
 
 pub fn process_part2(input: &Input) -> eyre::Result<usize> {
     let mut filler_sizes: [_; 9] = array_init::array_init(|_| vec![]);
-    // let mut filler_max = [None; 9];
     for block in &input.file_blocks {
         if block.len != 0 {
-            filler_sizes[block.len as usize - 1].push(block.clone());
+            filler_sizes[block.len as usize - 1].push(block);
         }
     }
 
@@ -136,39 +135,27 @@ pub fn process_part2(input: &Input) -> eyre::Result<usize> {
             continue;
         }
 
-        while let Some(filler) = filler_sizes[0..space as usize]
-            .iter_mut()
-            .filter(|filler| filler.len() > 0)
-            .filter(|filler| filler.last().unwrap().index > empty.index) // GIANT THANK YOU TO https://www.reddit.com/r/adventofcode/comments/1hajykk/comment/m19cr94/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
-            .max_by(|a, b| a.last().unwrap().id.cmp(&b.last().unwrap().id)) {
-            // println!("Trying to fill {empty:?} with space {space}");
+        while let Some(filler) = find_best_filler(&mut filler_sizes, empty, space) {
             let filler = filler.pop().unwrap();
-
             let index = empty.index + (empty.len - space) as usize;
-            // println!("Repositioning {filler:?} to @{index}");
             checksum += filler.id * sum_range(index, index + filler.len as usize - 1);
             space -= filler.len;
-
-            // sanity check
-            if space == 0 {
-                break;
-            }
         }
     }
 
     let filler_sum = filler_sizes.iter()
-        .map(|filler|
-            filler.iter().map(|filler|
-                filler.id * sum_range(filler.index, filler.index + filler.len as usize - 1)
-            )
-                .sum::<usize>()
-        )
+        .flat_map(|filler| filler.iter())
+        .map(|filler| filler.id * sum_range(filler.index, filler.index + filler.len as usize - 1))
         .sum::<usize>();
 
-    let result: usize = checksum + filler_sum;
-    // assert_ne!(result, 8518174061514, "Known to be wrong");
+    Ok(checksum + filler_sum)
+}
 
-    Ok(result)
+fn find_best_filler<'a, 'b>(filler_sizes: &'a mut [Vec<&'b FileBlock>; 9], empty: &EmptyBlock, space:  u8) -> Option<&'a mut Vec<&'b FileBlock>> {
+    filler_sizes[0..space as usize]
+        .iter_mut()
+        .filter(|filler| filler.last().is_some_and(|filler| filler.index > empty.index)) // GIANT THANK YOU TO https://www.reddit.com/r/adventofcode/comments/1hajykk/comment/m19cr94/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button
+        .max_by(|a, b| a.last().unwrap().id.cmp(&b.last().unwrap().id))
 }
 
 pub async fn run() -> eyre::Result<()> {
