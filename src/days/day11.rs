@@ -72,6 +72,7 @@ impl FromStr for Input {
 
 pub fn process_part1(input: &Input) -> eyre::Result<usize> {
     let mut stones = input.stones.clone();
+    // let mut cache: HashMap<Stone, (Stone, Option<Stone>)> = HashMap::new();
 
     let mut acc = Vec::new();
     for _ in 0..25 {
