@@ -1,8 +1,8 @@
-use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::time::SystemTime;
-use eyre::anyhow;
+use eyre::eyre;
+use itertools::Itertools;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
@@ -58,7 +58,7 @@ impl FromStr for Input {
         let input = s.lines()
             .map(|line| line.trim())
             .find(|line| !line.is_empty())
-            .ok_or(anyhow!("Input is empty"))?;
+            .ok_or(eyre!("Input is empty"))?;
 
         let stones = input.split(" ")
             .map(Stone::from_str)
@@ -73,7 +73,6 @@ impl FromStr for Input {
 pub fn process_part1(input: &Input) -> eyre::Result<usize> {
     let mut stones = input.stones.clone();
 
-    // println!("{stones:?}");
     let mut acc = Vec::new();
     for _ in 0..25 {
         for stone in &mut stones {
@@ -83,47 +82,35 @@ pub fn process_part1(input: &Input) -> eyre::Result<usize> {
         }
 
         stones.append(&mut acc);
-        // println!("{stones:?}");
     }
 
     Ok(stones.len())
 }
 
 pub fn process_part2(input: &Input) -> eyre::Result<usize> {
-    let mut stones: (HashMap<Stone, usize>, HashMap<Stone, usize>)  = (input.stones.iter()
-        .map(|stone| (*stone, 1))
-        .collect(), HashMap::with_capacity(input.stones.len()));
+    let mut stones: HashMap<Stone, usize> = input.stones.iter().cloned().counts();
+    let mut new_stones: HashMap<Stone, usize> = HashMap::with_capacity(stones.len());
 
-    // println!("{:?}", stones.0);
     for _ in 0..75 {
-        for (stone, &count) in &stones.0 {
+        for (stone, &count) in &stones {
             let mut stone = *stone;
             if let Some(new_stone) = stone.evolve() {
-                match stones.1.entry(new_stone) {
-                    Entry::Occupied(entry) => {
-                        *entry.into_mut() += count;
-                    }
-                    Entry::Vacant(entry) => {
-                        entry.insert(count);
-                    }
-                }
+                insert_stone_count(&mut new_stones, count, new_stone);
             }
-            match stones.1.entry(stone) {
-                Entry::Occupied(entry) => {
-                    *entry.into_mut() += count;
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(count);
-                }
-            }
+            insert_stone_count(&mut new_stones, count, stone);
         }
 
-        std::mem::swap(&mut stones.0, &mut stones.1);
-        stones.1.clear();
-        // println!("{:?}", stones.0);
+        std::mem::swap(&mut stones, &mut new_stones);
+        new_stones.clear();
     }
 
-    Ok(stones.0.iter().map(|(_, &count)| count).sum::<usize>())
+    Ok(stones.values().sum::<usize>())
+}
+
+fn insert_stone_count(new_stones: &mut HashMap<Stone, usize>, count: usize, stone: Stone) {
+    new_stones.entry(stone)
+        .and_modify(|saved_count| *saved_count += count)
+        .or_insert(count);
 }
 
 pub async fn run() -> eyre::Result<()> {
@@ -173,6 +160,6 @@ mod test {
         let input = example_input();
 
         let result = process_part2(&input).unwrap();
-        // assert_eq!(55312, result);
+        assert_eq!(65601038650482, result);
     }
 }

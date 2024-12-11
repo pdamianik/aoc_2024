@@ -344,7 +344,7 @@ mod test {
     #[tokio::test]
     pub async fn test_example_part1() {
         let input = example_input();
-        println!("{input:?}");
+        // println!("{input:?}");
 
         let result = process_part1(Arc::new(input)).await.unwrap();
         assert_eq!(36, result);

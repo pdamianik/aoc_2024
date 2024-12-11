@@ -189,7 +189,7 @@ mod test {
     #[tokio::test]
     pub async fn test_part1() {
         let input = example_input();
-        println!("{input:?}");
+        // println!("{input:?}");
 
         let (result, _) = process_part1(&input).await.unwrap();
         assert_eq!(3749, result);
