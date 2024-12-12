@@ -1,7 +1,8 @@
-use std::fmt::{Debug, Formatter};
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Deref, Mul, Sub, SubAssign};
 use std::str::FromStr;
+
 use eyre::anyhow;
 use itertools::Itertools;
 
@@ -35,12 +36,23 @@ impl<Line: FromStr + Sized + Clone + Debug + Eq + PartialEq + Hash> Deref for Li
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Coordinate(pub isize, pub isize);
 
+impl Display for Coordinate {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.0, self.1)
+    }
+}
+
 impl Coordinate {
+    pub const NORTH: Self = Self(0, -1);
+    pub const EAST: Self = Self(1, 0);
+    pub const SOUTH: Self = Self(0, 1);
+    pub const WEST: Self = Self(-1, 0);
+
     pub const CARDINALITIES: [Self; 4] = [
-        Self(0, 1), // North
-        Self(1, 0), // East
-        Self(0, -1), // South
-        Self(-1, 0), // West
+        Self::NORTH, // North
+        Self::EAST, // East
+        Self::SOUTH, // South
+        Self::WEST, // West
     ];
 
     pub const EXTENDED_CARDINALITIES: [Self; 8] = [
@@ -100,7 +112,12 @@ pub struct Grid {
     width: usize,
 }
 
+#[allow(dead_code)]
 impl Grid {
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
     pub fn index_to_coordinate(&self, index: usize) -> Coordinate {
         Coordinate((index % self.width) as isize, (index / self.width) as isize)
     }
@@ -118,6 +135,10 @@ impl Grid {
         }
     }
 
+    pub fn offset_index(&self, index: usize, offset: Coordinate) -> Result<usize, ()> {
+        self.coordinate_to_index(self.index_to_coordinate(index) + offset)
+    }
+
     pub fn as_slice(&self) -> &[char] {
         &self.char_map
     }
@@ -128,6 +149,17 @@ impl Grid {
             postprocess,
         }
     }
+
+    pub fn row(&self, index: usize) -> impl Iterator<Item = &char> {
+        self.char_map[index * self.width..(index + 1)*self.width()].iter()
+    }
+
+    pub fn col(&self, index: usize) -> impl Iterator<Item = &char> {
+        if index > self.width {
+            panic!();
+        }
+        self.char_map.iter().skip(index).step_by(self.width)
+    }
 }
 
 pub struct GridDisplay<'grid, F: Fn(char, usize) -> String> {
@@ -135,7 +167,7 @@ pub struct GridDisplay<'grid, F: Fn(char, usize) -> String> {
     postprocess: F,
 }
 
-impl<F: Fn(char, usize) -> String> std::fmt::Display for GridDisplay<'_, F> {
+impl<F: Fn(char, usize) -> String> Display for GridDisplay<'_, F> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.grid.char_map.iter()
             .enumerate()
@@ -223,7 +255,7 @@ pub struct ParsedGridDisplay<'grid, T: TryFrom<char>, F: Fn(&T, usize) -> String
     postprocess: F,
 }
 
-impl<T: TryFrom<char>, F: Fn(&T, usize) -> String> std::fmt::Display for ParsedGridDisplay<'_, T, F> {
+impl<T: TryFrom<char>, F: Fn(&T, usize) -> String> Display for ParsedGridDisplay<'_, T, F> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.grid.map.iter()
             .enumerate()

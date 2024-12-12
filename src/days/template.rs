@@ -1,9 +1,11 @@
 use std::str::FromStr;
+use std::time::SystemTime;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 
 pub const DAY: Day = Day(todo!());
 
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Input {
 
 }
