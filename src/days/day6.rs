@@ -307,7 +307,7 @@ fn visualize_visited_time(visited: &[(u8, [Option<usize>; 4])], width: usize, ob
                 } else {
                     time.ilog10() as usize
                 };
-                let filler = " ".repeat((max_len - len));
+                let filler = " ".repeat(max_len - len);
                 let text = format!("{}{}", filler, time);
                 match (position, obstacle, direction, mark, new_obstacle) {
                     (position, Some(obstacle), _, _, _) if obstacle == position => text.bold().bright_red().to_string(),
