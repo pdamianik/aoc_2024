@@ -217,6 +217,10 @@ pub struct ParsedGrid<T: TryFrom<char>> {
 }
 
 impl<T: TryFrom<char>> ParsedGrid<T> {
+    pub fn width(&self) -> usize {
+        self.width
+    }
+
     pub fn index_to_coordinate(&self, index: usize) -> Coordinate {
         Coordinate((index % self.width) as isize, (index / self.width) as isize)
     }
@@ -242,7 +246,11 @@ impl<T: TryFrom<char>> ParsedGrid<T> {
         &self.map
     }
 
-    pub fn display<F: Fn(&T, usize) -> String>(&self, postprocess: F) -> ParsedGridDisplay<T, F> {
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        &mut self.map
+    }
+
+    pub fn display<F: Fn(&T, usize) -> D, D: Display>(&self, postprocess: F) -> ParsedGridDisplay<T, F, D> {
         ParsedGridDisplay {
             grid: self,
             postprocess,
@@ -250,19 +258,25 @@ impl<T: TryFrom<char>> ParsedGrid<T> {
     }
 }
 
-pub struct ParsedGridDisplay<'grid, T: TryFrom<char>, F: Fn(&T, usize) -> String> {
+impl<T: TryFrom<char> + Copy> ParsedGrid<T> {
+    pub fn swap(&mut self, a: usize, b: usize) {
+        (self.map[a], self.map[b]) = (self.map[b], self.map[a])
+    }
+}
+
+pub struct ParsedGridDisplay<'grid, T: TryFrom<char>, F: Fn(&T, usize) -> D, D: Display> {
     grid: &'grid ParsedGrid<T>,
     postprocess: F,
 }
 
-impl<T: TryFrom<char>, F: Fn(&T, usize) -> String> Display for ParsedGridDisplay<'_, T, F> {
+impl<T: TryFrom<char>, F: Fn(&T, usize) -> D, D: Display> Display for ParsedGridDisplay<'_, T, F, D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.grid.map.iter()
             .enumerate()
             .chunks(self.grid.width)
             .into_iter()
             .map(|line| line
-                .map(|(index, character)| (self.postprocess)(character, index))
+                .map(|(index, character)| (self.postprocess)(character, index).to_string())
                 .collect::<String>()
             )
             .join("\n")
