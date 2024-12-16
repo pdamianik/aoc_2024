@@ -199,7 +199,7 @@ impl Input {
         None
     }
 
-    pub fn count_best_paths(&self) -> Option<usize> {
+    pub fn count_best_paths(&self) -> usize {
         let mut scores = vec![(usize::MAX, 0u8); self.map.as_slice().len()];
         let mut heap = BinaryHeap::new();
 
@@ -222,41 +222,7 @@ impl Input {
             //     );
             // }
             if score > scores[self.end].0 {
-                let mut shortest_path = VecDeque::from([(self.end, None)]);
-                let mut shortest_map = vec![false; self.map.as_slice().len()];
-                // count = 0;
-                while let Some((shortest_element, previous)) = shortest_path.pop_front() {
-                    shortest_map[shortest_element] = true;
-                    let mask = scores[shortest_element].1;
-                    for direction in Direction::from_mask(mask) {
-                        let position = self.map.offset_index(shortest_element, direction.into()).unwrap();
-                        let tolerance = if previous.is_some_and(|previous| direction == previous) {
-                            1000usize
-                        } else {
-                            0
-                        };
-                        if scores[position].0  < scores[shortest_element].0 + tolerance {
-                            shortest_path.push_back((position, Some(direction)));
-                        }
-                    }
-                    // if (count & ((1 << 6) - 1)) == 0 {
-                    //     println!("{}{}", MoveCursorTo(0, 0), scores.iter()
-                    //         .zip(shortest_map.iter())
-                    //         .map(|(&(_, directions), &shortest_route)| if shortest_route {
-                    //             display_directions(directions).bold().bright_green().to_string()
-                    //         } else if directions != 0 {
-                    //             display_directions(directions).dimmed().bright_white().to_string()
-                    //         } else {
-                    //             display_directions(directions).dimmed().white().to_string()
-                    //         })
-                    //         .chunks(self.map.width()).into_iter()
-                    //         .map(|chunk| chunk.collect::<String>())
-                    //         .join("\n")
-                    //     );
-                    // }
-                    // count += 1;
-                }
-                return Some(shortest_map.iter().filter(|shortest| **shortest).count())
+                break;
             }
 
             if score > scores[position].0 { continue; }
@@ -289,9 +255,55 @@ impl Input {
             }
             // count += 1;
         }
+        let mut shortest_path = VecDeque::from([(self.end, None)]);
+        let mut shortest_map = vec![false; self.map.as_slice().len()];
+        // count = 0;
+        while let Some((shortest_element, previous)) = shortest_path.pop_front() {
+            shortest_map[shortest_element] = true;
+            let mask = scores[shortest_element].1;
+            for direction in Direction::from_mask(mask) {
+                let position = self.map.offset_index(shortest_element, direction.into()).unwrap();
+                let tolerance = if previous.is_some_and(|previous| direction == previous) {
+                    1000usize
+                } else {
+                    0
+                };
+                if scores[position].0  < scores[shortest_element].0 + tolerance {
+                    shortest_path.push_back((position, Some(direction)));
+                }
+            }
+            // if (count & ((1 << 6) - 1)) == 0 {
+            //     println!("{}{}", MoveCursorTo(0, 0), scores.iter()
+            //         .zip(shortest_map.iter())
+            //         .map(|(&(_, directions), &shortest_route)| if shortest_route {
+            //             display_directions(directions).bold().bright_green().to_string()
+            //         } else if directions != 0 {
+            //             display_directions(directions).dimmed().bright_white().to_string()
+            //         } else {
+            //             display_directions(directions).dimmed().white().to_string()
+            //         })
+            //         .chunks(self.map.width()).into_iter()
+            //         .map(|chunk| chunk.collect::<String>())
+            //         .join("\n")
+            //     );
+            // }
+            // count += 1;
+        }
+        // println!("{}{}", MoveCursorTo(0, 0), scores.iter()
+        //     .zip(shortest_map.iter())
+        //     .map(|(&(_, directions), &shortest_route)| if shortest_route {
+        //         display_directions(directions).bold().bright_green().to_string()
+        //     } else if directions != 0 {
+        //         display_directions(directions).dimmed().bright_white().to_string()
+        //     } else {
+        //         display_directions(directions).dimmed().white().to_string()
+        //     })
+        //     .chunks(self.map.width()).into_iter()
+        //     .map(|chunk| chunk.collect::<String>())
+        //     .join("\n")
+        // );
         // print!("{}", ShowCursor);
-
-        None
+        shortest_map.iter().filter(|shortest| **shortest).count()
     }
 }
 
@@ -322,7 +334,7 @@ pub fn process_part1(input: &Input) -> eyre::Result<usize> {
 }
 
 pub fn process_part2(input: &Input) -> eyre::Result<usize> {
-    let result = input.count_best_paths().unwrap();
+    let result = input.count_best_paths();
 
     Ok(result)
 }
@@ -427,5 +439,26 @@ mod test {
 
         let result = process_part2(&input).unwrap();
         assert_eq!(64, result);
+    }
+
+    // from https://www.reddit.com/r/adventofcode/comments/1hfhgl1/2024_day_16_part_1_alternate_test_case/
+    fn alternate_input() -> Input {
+        include_str!("../../test/input/day16_alternate.in").parse().unwrap()
+    }
+
+    #[test]
+    pub fn test_alternate_part1() {
+        let input = alternate_input();
+
+        let result = process_part1(&input).unwrap();
+        assert_eq!(21148, result);
+    }
+
+    #[test]
+    pub fn test_alternate_part2() {
+        let input = alternate_input();
+
+        let result = process_part2(&input).unwrap();
+        assert_eq!(149, result);
     }
 }
