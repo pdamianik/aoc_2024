@@ -26,6 +26,7 @@ array-init = "2.1.0"
 cached = "0.54.0"
 ansi-control-codes = "1.0.1"
 ansi-escape-codes = "0.1.0"
+petgraph = "0.6.5"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["async_tokio"] }
@@ -90,6 +91,10 @@ path = "src/day14.rs"
 name = "day15"
 path = "src/day15.rs"
 
+[[bin]]
+name = "day16"
+path = "src/day16.rs"
+
 [[bench]]
 name = "day1"
 harness = false
@@ -148,4 +153,8 @@ harness = false
 
 [[bench]]
 name = "day15"
+harness = false
+
+[[bench]]
+name = "day16"
 harness = false
