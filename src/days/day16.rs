@@ -2,7 +2,10 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, VecDeque};
 use std::str::FromStr;
 use std::time::SystemTime;
+// use anes::{ClearBuffer, HideCursor, MoveCursorTo, ShowCursor};
 use eyre::eyre;
+// use itertools::Itertools;
+// use owo_colors::OwoColorize;
 use tracing::{debug, info, Instrument, Level, span, trace};
 use crate::days::Day;
 use crate::days::util::{Coordinate, Grid};
@@ -93,6 +96,27 @@ impl Direction {
     }
 }
 
+// fn display_directions(directions: u8) -> char {
+//     [
+//         '.', // 0b0000
+//         '╵', // 0b0001
+//         '╶', // 0b0010
+//         '└', // 0b0011
+//         '╷', // 0b0100
+//         '│', // 0b0101
+//         '┌', // 0b0110
+//         '├', // 0b0111
+//         '╴', // 0b1000
+//         '┘', // 0b1001
+//         '─', // 0b1010
+//         '┴', // 0b1011
+//         '┐', // 0b1100
+//         '┤', // 0b1101
+//         '┬', // 0b1110
+//         '┼', // 0b1111
+//     ][directions as usize]
+// }
+
 impl Into<Coordinate> for Direction {
     fn into(self) -> Coordinate {
         match self {
@@ -182,10 +206,25 @@ impl Input {
         scores[self.start].0 = 0;
         heap.push(State { position: self.start, score: 0, facing: Direction::East });
 
+        // let mut count = 0;
+        // print!("{}{}", ClearBuffer::All, HideCursor);
         while let Some(State { position, score, facing }) = heap.pop() {
+            // if (count & ((1 << 4) - 1)) == 0 {
+            //     println!("{}{}", MoveCursorTo(0, 0), scores.iter()
+            //         .map(|&(_, directions)| if directions != 0 {
+            //             display_directions(directions).dimmed().bright_white().to_string()
+            //         } else {
+            //             display_directions(directions).dimmed().white().to_string()
+            //         })
+            //         .chunks(self.map.width()).into_iter()
+            //         .map(|chunk| chunk.collect::<String>())
+            //         .join("\n")
+            //     );
+            // }
             if score > scores[self.end].0 {
                 let mut shortest_path = VecDeque::from([(self.end, None)]);
                 let mut shortest_map = vec![false; self.map.as_slice().len()];
+                // count = 0;
                 while let Some((shortest_element, previous)) = shortest_path.pop_front() {
                     shortest_map[shortest_element] = true;
                     let mask = scores[shortest_element].1;
@@ -200,6 +239,22 @@ impl Input {
                             shortest_path.push_back((position, Some(direction)));
                         }
                     }
+                    // if (count & ((1 << 6) - 1)) == 0 {
+                    //     println!("{}{}", MoveCursorTo(0, 0), scores.iter()
+                    //         .zip(shortest_map.iter())
+                    //         .map(|(&(_, directions), &shortest_route)| if shortest_route {
+                    //             display_directions(directions).bold().bright_green().to_string()
+                    //         } else if directions != 0 {
+                    //             display_directions(directions).dimmed().bright_white().to_string()
+                    //         } else {
+                    //             display_directions(directions).dimmed().white().to_string()
+                    //         })
+                    //         .chunks(self.map.width()).into_iter()
+                    //         .map(|chunk| chunk.collect::<String>())
+                    //         .join("\n")
+                    //     );
+                    // }
+                    // count += 1;
                 }
                 return Some(shortest_map.iter().filter(|shortest| **shortest).count())
             }
@@ -232,7 +287,9 @@ impl Input {
                     heap.push(next);
                 }
             }
+            // count += 1;
         }
+        // print!("{}", ShowCursor);
 
         None
     }

@@ -24,8 +24,7 @@ find_all = "2.0.0"
 rand = "0.8.5"
 array-init = "2.1.0"
 cached = "0.54.0"
-ansi-control-codes = "1.0.1"
-ansi-escape-codes = "0.1.0"
+anes = "0.2.0"
 petgraph = "0.6.5"
 
 [dev-dependencies]
