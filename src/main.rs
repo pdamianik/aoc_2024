@@ -24,6 +24,7 @@ pub async fn main() -> eyre::Result<()> {
         day14,
         day15,
         day16,
+        day17,
     ) = join!(
         tokio::spawn(days::day1::run()),
         tokio::spawn(days::day2::run()),
@@ -41,6 +42,7 @@ pub async fn main() -> eyre::Result<()> {
         tokio::spawn(days::day14::run()),
         tokio::spawn(days::day15::run()),
         tokio::spawn(days::day16::run()),
+        tokio::spawn(days::day17::run()),
     );
 
     day1?
@@ -59,4 +61,5 @@ pub async fn main() -> eyre::Result<()> {
         .and(day14?)
         .and(day15?)
         .and(day16?)
+        .and(day17?)
 }
