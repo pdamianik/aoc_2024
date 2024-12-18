@@ -32,6 +32,119 @@ impl<Line: FromStr + Sized + Clone + Debug + Eq + PartialEq + Hash> Deref for Li
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+impl Direction {
+    pub const ALL: [Self; 4] = [Self::North, Self::East, Self::South, Self::West];
+    pub const DISPLAY: [char; 16] = [
+        '.', // 0b0000
+        '╵', // 0b0001
+        '╶', // 0b0010
+        '└', // 0b0011
+        '╷', // 0b0100
+        '│', // 0b0101
+        '┌', // 0b0110
+        '├', // 0b0111
+        '╴', // 0b1000
+        '┘', // 0b1001
+        '─', // 0b1010
+        '┴', // 0b1011
+        '┐', // 0b1100
+        '┤', // 0b1101
+        '┬', // 0b1110
+        '┼', // 0b1111
+    ];
+
+    pub const fn symbol(&self) -> char {
+        match self {
+            Self::North => '^',
+            Self::East => '>',
+            Self::South => 'v',
+            Self::West => '<',
+        }
+    }
+
+    pub const fn rotate90(&self) -> Self {
+        match self {
+            Self::North => Self::East,
+            Self::East => Self::South,
+            Self::South => Self::West,
+            Self::West => Self::North,
+        }
+    }
+
+    pub const fn rotate180(&self) -> Self {
+        match self {
+            Self::North => Self::South,
+            Self::East => Self::West,
+            Self::South => Self::North,
+            Self::West => Self::East,
+        }
+    }
+
+    pub const fn rotate270(&self) -> Self {
+        match self {
+            Self::North => Self::West,
+            Self::East => Self::North,
+            Self::South => Self::East,
+            Self::West => Self::South,
+        }
+    }
+
+    pub const fn vertical(&self) -> bool {
+        match self {
+            Self::North | Self::South => true,
+            Self::East | Self::West => false,
+        }
+    }
+
+    pub const fn horizontal(&self) -> bool {
+        match self {
+            Self::North | Self::South => false,
+            Self::East | Self::West => true,
+        }
+    }
+
+    pub const fn mask(&self) -> u8 {
+        match self {
+            Direction::North => 1 << 0,
+            Direction::East => 1 << 1,
+            Direction::South => 1 << 2,
+            Direction::West => 1 << 3,
+        }
+    }
+
+    pub fn from_mask(mask: u8) -> Vec<Self> {
+        (0..4).filter(|shift| (mask & (1 << *shift) != 0))
+            .map(|shift| {
+                match shift {
+                    0 => Self::North,
+                    1 => Self::East,
+                    2 => Self::South,
+                    3 => Self::West,
+                    _ => unreachable!(),
+                }
+            }).collect()
+    }
+}
+
+impl Into<Coordinate> for Direction {
+    fn into(self) -> Coordinate {
+        match self {
+            Self::North => Coordinate(0, -1),
+            Self::East => Coordinate(1, 0),
+            Self::South => Coordinate(0, 1),
+            Self::West => Coordinate(-1, 0),
+        }
+    }
+}
+
 // x, y
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct Coordinate(pub isize, pub isize);
@@ -211,12 +324,21 @@ impl FromStr for Grid {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
-pub struct ParsedGrid<T: TryFrom<char>> {
+pub struct ParsedGrid<T> {
     map: Vec<T>,
     width: usize,
 }
 
-impl<T: TryFrom<char>> ParsedGrid<T> {
+impl<T: Default> ParsedGrid<T> {
+    pub fn new(width: usize, height: usize) -> Self {
+        Self {
+            map: (0..width * height).map(|_| Default::default()).collect(),
+            width,
+        }
+    }
+}
+
+impl<T> ParsedGrid<T> {
     pub fn width(&self) -> usize {
         self.width
     }
@@ -258,18 +380,18 @@ impl<T: TryFrom<char>> ParsedGrid<T> {
     }
 }
 
-impl<T: TryFrom<char> + Copy> ParsedGrid<T> {
+impl<T: Copy> ParsedGrid<T> {
     pub fn swap(&mut self, a: usize, b: usize) {
         (self.map[a], self.map[b]) = (self.map[b], self.map[a])
     }
 }
 
-pub struct ParsedGridDisplay<'grid, T: TryFrom<char>, F: Fn(&T, usize) -> D, D: Display> {
+pub struct ParsedGridDisplay<'grid, T, F: Fn(&T, usize) -> D, D: Display> {
     grid: &'grid ParsedGrid<T>,
     postprocess: F,
 }
 
-impl<T: TryFrom<char>, F: Fn(&T, usize) -> D, D: Display> Display for ParsedGridDisplay<'_, T, F, D> {
+impl<T, F: Fn(&T, usize) -> D, D: Display> Display for ParsedGridDisplay<'_, T, F, D> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.grid.map.iter()
             .enumerate()
