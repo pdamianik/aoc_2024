@@ -102,6 +102,10 @@ path = "src/day17.rs"
 name = "day18"
 path = "src/day18.rs"
 
+[[bin]]
+name = "day19"
+path = "src/day19.rs"
+
 [[bench]]
 name = "day1"
 harness = false
@@ -172,4 +176,8 @@ harness = false
 
 [[bench]]
 name = "day18"
+harness = false
+
+[[bench]]
+name = "day19"
 harness = false
