@@ -39,17 +39,20 @@ impl FromStr for Input {
 
 #[cached(key = "String", convert = r#"{ pattern.to_string() }"#)]
 fn count_pattern_combinations(pattern: &str, available_towels: &[String]) -> usize {
-    let mut sum = 0;
-    for towel in available_towels {
-        if let Some(rest) = pattern.strip_prefix(towel) {
-            if rest.is_empty() {
-                sum += 1;
+    available_towels
+        .iter()
+        .map(|towel|
+            if let Some(rest) = pattern.strip_prefix(towel) {
+                if rest.is_empty() {
+                    1
+                } else {
+                    count_pattern_combinations(rest, available_towels)
+                }
             } else {
-                sum += count_pattern_combinations(rest, available_towels);
+                0
             }
-        }
-    }
-    sum
+        )
+        .sum()
 }
 
 pub fn process_part1(input: &Input) -> eyre::Result<usize> {
