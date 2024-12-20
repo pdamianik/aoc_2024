@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, Deref, Mul, Sub, SubAssign};
@@ -225,6 +226,11 @@ pub struct Grid {
     width: usize,
 }
 
+struct Node {
+    position: usize,
+    distance: usize,
+}
+
 #[allow(dead_code)]
 impl Grid {
     pub fn width(&self) -> usize {
@@ -272,6 +278,26 @@ impl Grid {
             panic!();
         }
         self.char_map.iter().skip(index).step_by(self.width)
+    }
+
+    pub fn flood(&self, start: usize, is_wall: impl Fn(char) -> bool) -> Vec<usize> {
+        let mut to_visit = VecDeque::from([Node { position: start, distance: 0 }]);
+        let mut distances = vec![usize::MAX; self.char_map.len()];
+        distances[start] = 0;
+
+        while let Some(Node { position, distance }) = to_visit.pop_front() {
+            let distance = distance + 1;
+            for direction in Direction::ALL {
+                if let Ok(position) = self.offset_index(position, direction.into()) {
+                    if distance < distances[position] && !is_wall(self.char_map[position]) {
+                        distances[position] = distance;
+                        to_visit.push_back(Node { position, distance });
+                    }
+                }
+            }
+        }
+
+        distances
     }
 }
 
