@@ -179,6 +179,20 @@ impl Coordinate {
         Self(-1, 0), // West
         Self(-1, 1), // Northwest
     ];
+
+    pub const fn eigen_axis(self) -> Self {
+        let x_direction = if self.0 == 0 {
+            0
+        } else {
+            self.0/self.0.abs()
+        };
+        let y_direction = if self.1 == 0 {
+            0
+        } else {
+            self.1/self.1.abs()
+        };
+        Coordinate(x_direction, y_direction)
+    }
 }
 
 impl Add for Coordinate {
