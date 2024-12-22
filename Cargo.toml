@@ -26,6 +26,8 @@ array-init = "2.1.0"
 cached = "0.54.0"
 anes = "0.2.0"
 petgraph = "0.6.5"
+num-bigint = "0.4.6"
+num-traits = "0.2.19"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["async_tokio"] }
