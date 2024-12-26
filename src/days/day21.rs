@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::ops::{BitAnd, Index, Mul};
 use std::path::Iter;
+use std::rc::Rc;
 use std::str::{Chars, FromStr};
 use std::time::SystemTime;
 use std::vec::IntoIter;
@@ -41,14 +42,18 @@ impl FromStr for Input {
     }
 }
 
-pub trait Keypad {
+pub trait Keypad<S: Iterator<Item = Self::Output>>: Iterator<Item = Route> {
     const START: Coordinate;
+
+    type Output;
 
     fn input_to_coordinate(input: char) -> Coordinate;
 
     fn coordinate_to_input(coordinate: Coordinate) -> char;
 
     fn route_to_coordinate(from: Coordinate, to: Coordinate) -> Route;
+
+    fn new(to_type: S) -> Self;
 }
 
 pub struct NumericKeypad<Source: Iterator<Item=char>> {
@@ -56,8 +61,9 @@ pub struct NumericKeypad<Source: Iterator<Item=char>> {
     current: Coordinate,
 }
 
-impl<S: Iterator<Item=char>> Keypad for NumericKeypad<S> {
+impl<S: Iterator<Item=char>> Keypad<S> for NumericKeypad<S> {
     const START: Coordinate = Coordinate(2, 3);
+    type Output = char;
 
     fn input_to_coordinate(input: char) -> Coordinate {
         match input {
@@ -111,10 +117,8 @@ impl<S: Iterator<Item=char>> Keypad for NumericKeypad<S> {
             },
         }
     }
-}
 
-impl<Source: Iterator<Item=char>> NumericKeypad<Source> {
-    pub fn new(mut to_type: Source) -> Self {
+    fn new(to_type: S) -> Self {
         Self {
             to_type,
             current: Self::START,
@@ -250,8 +254,10 @@ pub struct DirectionalKeypad<Source: Iterator<Item=Route>> {
     queue: Vec<Route>,
 }
 
-impl<S: Iterator<Item=Route>> Keypad for DirectionalKeypad<S> {
+impl<S: Iterator<Item=Route>> Keypad<S> for DirectionalKeypad<S> {
     const START: Coordinate = Coordinate(2, 0);
+
+    type Output = Route;
 
     fn input_to_coordinate(input: char) -> Coordinate {
         match input {
@@ -303,17 +309,14 @@ impl<S: Iterator<Item=Route>> Keypad for DirectionalKeypad<S> {
             },
         }
     }
-}
 
-impl<Source: Iterator<Item=Route>> DirectionalKeypad<Source> {
-    pub fn new(mut to_type: Source) -> Self {
+    fn new(to_type: S) -> Self {
         Self {
             to_type,
             queue: Vec::new(),
         }
     }
 }
-
 
 impl<S: Iterator<Item=Route>> Iterator for DirectionalKeypad<S> {
     type Item = Route;
@@ -363,65 +366,66 @@ impl<S: Iterator<Item=Route>> Iterator for DirectionalKeypad<S> {
     }
 }
 
-pub struct Simulate<Steps: Iterator<Item=char>, K: Keypad> {
-    steps: Steps,
-    position: Coordinate,
-    keypad: PhantomData<K>,
-}
-
-impl<Steps: Iterator<Item=char>, K: Keypad> Simulate<Steps, K> {
-    pub fn new(steps: Steps) -> Self {
-        Self {
-            steps,
-            position: K::START,
-            keypad: PhantomData,
-        }
-    }
-}
-
-impl<S: Iterator<Item=char>, K: Keypad> Iterator for Simulate<S, K> {
-    type Item = Option<char>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let step = self.steps.next()?;
-        match step {
-            '^' => self.position.1 -= 1,
-            '>' => self.position.0 += 1,
-            'v' => self.position.1 += 1,
-            '<' => self.position.0 -= 1,
-            'A' => return Some(Some(K::coordinate_to_input(self.position))),
-            _ => panic!("Invalid step {step}"),
-        }
-        Some(None)
-    }
-}
+// pub struct Simulate<Steps: Iterator<Item=char>, K: Keypad<Steps, Output = char>> {
+//     steps: Steps,
+//     position: Coordinate,
+//     keypad: PhantomData<K>,
+// }
+//
+// impl<Steps: Iterator<Item=char>, K: Keypad<Steps>> Simulate<Steps, K> {
+//     pub fn new(steps: Steps) -> Self {
+//         Self {
+//             steps,
+//             position: K::START,
+//             keypad: PhantomData,
+//         }
+//     }
+// }
+//
+// impl<S: Iterator<Item=char>, K: Keypad<S>> Iterator for Simulate<S, K> {
+//     type Item = Option<char>;
+//
+//     fn next(&mut self) -> Option<Self::Item> {
+//         let step = self.steps.next()?;
+//         match step {
+//             '^' => self.position.1 -= 1,
+//             '>' => self.position.0 += 1,
+//             'v' => self.position.1 += 1,
+//             '<' => self.position.0 -= 1,
+//             'A' => return Some(Some(K::coordinate_to_input(self.position))),
+//             _ => panic!("Invalid step {step}"),
+//         }
+//         Some(None)
+//     }
+// }
 
 #[derive(Debug, Clone)]
-pub struct Combination<'parts> {
+pub struct Combination {
     len: usize,
-    parts: &'parts [Route],
+    parts: Rc<Vec<Route>>,
     current: usize,
     variants: usize,
     current_variance: usize,
 }
 
-impl PartialEq for Combination<'_> {
+impl PartialEq for Combination {
     fn eq(&self, other: &Self) -> bool {
-        self.parts == other.parts && self.variants == other.variants
+        self.iter().eq(other.iter())
     }
 }
 
-impl Eq for Combination<'_> {}
+impl Eq for Combination {}
 
-impl Hash for Combination<'_> {
+impl Hash for Combination {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.parts.hash(state);
-        self.variants.hash(state);
+        for route in self.iter() {
+            route.hash(state);
+        }
     }
 }
 
-impl<'parts> Combination<'parts> {
-    pub fn new(parts: &'parts [Route], variants: usize) -> Self {
+impl Combination {
+    pub fn new(parts: Rc<Vec<Route>>, variants: usize) -> Self {
         let len = parts.iter().map(|route| route.len()).sum();
         Self {
             len,
@@ -431,15 +435,53 @@ impl<'parts> Combination<'parts> {
             current_variance: 1,
         }
     }
+
+    pub fn iter(&self) -> CombinationIter<'_> {
+        CombinationIter {
+            combination: self,
+            current: 0,
+            variants: self.variants,
+            current_variance: 0,
+        }
+    }
 }
 
-impl ExactSizeIterator for Combination<'_> {
+pub struct CombinationIter<'combination> {
+    combination: &'combination Combination,
+    current: usize,
+    variants: usize,
+    current_variance: usize,
+}
+
+impl<'combination> ExactSizeIterator for CombinationIter<'combination> {
+    fn len(&self) -> usize {
+        self.combination.len
+    }
+}
+
+impl<'combination> Iterator for CombinationIter<'combination> {
+    type Item = Route;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let route = self.combination.parts.get(self.current)?;
+        self.current += 1;
+        if route.reversible() {
+            if (&self.variants & &self.current_variance) != 0 {
+                return Some(route.reverse());
+            }
+            self.current_variance <<= 1;
+        }
+        Some(route.clone())
+    }
+}
+
+impl ExactSizeIterator for Combination {
     fn len(&self) -> usize {
         self.len
     }
 }
 
-impl Iterator for Combination<'_> {
+impl Iterator for Combination {
     type Item = Route;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -456,27 +498,27 @@ impl Iterator for Combination<'_> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Combinations<'parts> {
-    parts: &'parts [Route],
+pub struct Combinations {
+    parts: Rc<Vec<Route>>,
     current: usize,
     max: usize,
 }
 
-impl<'parts> Combinations<'parts> {
-    pub fn new(parts: &'parts [Route]) -> Self {
+impl Combinations {
+    pub fn new(parts: Vec<Route>) -> Self {
         let combinations = parts.iter()
             .filter(|route| route.reversible())
             .count();
         Self {
-            parts,
+            parts: Rc::new(parts),
             current: 0,
             max: if combinations > 0 { 1 << (combinations - 1) } else { 0 },
         }
     }
 }
 
-impl<'parts> Iterator for Combinations<'parts> {
-    type Item = Combination<'parts>;
+impl Iterator for Combinations {
+    type Item = Combination;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.current > self.max {
@@ -486,24 +528,44 @@ impl<'parts> Iterator for Combinations<'parts> {
         let variants = self.current.clone();
         self.current += 1;
 
-        Some(Combination::new(self.parts, variants))
+        Some(Combination::new(self.parts.clone(), variants))
+    }
+}
+
+pub struct KeypadInput {
+    combinations: Combinations,
+}
+
+impl KeypadInput {
+    pub fn new(combinations: Combinations) -> Self {
+        Self {
+            combinations,
+        }
+    }
+}
+
+impl Iterator for KeypadInput {
+    type Item = Combinations;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        Some(Combinations::new(DirectionalKeypad::new(self.combinations.next()?).collect()))
     }
 }
 
 pub fn process_part1(input: &Input) -> eyre::Result<usize> {
     let result = input.codes.iter()
-        .zip([
-            "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A",
-            "<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A",
-            "<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
-            "<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A",
-            "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
-        ])
-        .map(|(code, solution)| {
+        // .zip([
+        //     "<vA<AA>>^AvAA<^A>A<v<A>>^AvA^A<vA>^A<v<A>^A>AAvA^A<v<A>A>^AAAvA<^A>A",
+        //     "<v<A>>^AAAvA^A<vA<AA>>^AvAA<^A>A<v<A>A>^AAAvA<^A>A<vA>^A<A>A",
+        //     "<v<A>>^A<vA<A>>^AAvAA<^A>A<v<A>>^AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
+        //     "<v<A>>^AA<vA<A>>^AAvAA<^A>A<vA>^A<A>A<vA>^A<A>A<v<A>A>^AAvA<^A>A",
+        //     "<v<A>>^AvA^A<vA<AA>>^AAvA<^A>AAvA^A<vA>^AA<A>A<v<A>A>^AAAvA<^A>A",
+        // ])
+        .map(|code| {
             let code_num: usize = code[0..code.len() - 1].parse().unwrap();
 
             let parts = NumericKeypad::new(code.chars()).collect::<Vec<_>>();
-            let combinations = Combinations::new(&parts);
+            let combinations = Combinations::new(parts);
             let min_length = combinations.clone()
                 .map(|combination| combination.len())
                 .min()
@@ -518,7 +580,7 @@ pub fn process_part1(input: &Input) -> eyre::Result<usize> {
 
                 while let Some(combination) = current.pop() {
                     let min_length = next.iter().map(Combination::len).min().unwrap_or(usize::MAX);
-                    let parts = DirectionalKeypad::new(combination).collect::<Vec<_>>().leak();
+                    let parts = DirectionalKeypad::new(combination).collect::<Vec<_>>();
                     let combinations = Combinations::new(parts)
                         .filter(|combination| combination.len() <= min_length)
                         .unique()
@@ -543,22 +605,22 @@ pub fn process_part1(input: &Input) -> eyre::Result<usize> {
                 // next.clear();
             }
             let result = current.first().unwrap().clone().flat_map(|route| route.chars()).collect::<String>();
-            println!("{code} {result:?} {}", result.len());
-            println!("{code} {solution:?} {}", solution.len());
-            println!("{code}: {} {}", result.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>(), current.first().unwrap().len());
-            println!("{code}: {} {}", solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>(), solution.len());
-            let simulated = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(result.chars()).filter_map(identity).collect::<String>();
-            let simulated_solution = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(solution.chars()).filter_map(identity).collect::<String>();
-            println!("{code}: simulated once {}", simulated.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
-            println!("{code}: simulated once {}", simulated_solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
-            let simulated = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(result.chars()).filter_map(identity)).filter_map(identity).collect::<String>();
-            let simulated_solution = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(solution.chars()).filter_map(identity)).filter_map(identity).collect::<String>();
-            println!("{code}: simulated twice {}", simulated.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
-            println!("{code}: simulated twice {}", simulated_solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
-            let simulated = Simulate::<_, NumericKeypad<Chars<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(result.chars()).filter_map(identity)).filter_map(identity)).filter_map(identity).collect::<String>();
-            let simulated_solution = Simulate::<_, NumericKeypad<Chars<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(solution.chars()).filter_map(identity)).filter_map(identity)).filter_map(identity).collect::<String>();
-            println!("{code}: simulated thrice {}", simulated.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
-            println!("{code}: simulated thrice {}", simulated_solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
+            // println!("{code} {result:?} {}", result.len());
+            // println!("{code} {solution:?} {}", solution.len());
+            // println!("{code}: {} {}", result.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>(), current.first().unwrap().len());
+            // println!("{code}: {} {}", solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>(), solution.len());
+            // let simulated = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(result.chars()).filter_map(identity).collect::<String>();
+            // let simulated_solution = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(solution.chars()).filter_map(identity).collect::<String>();
+            // println!("{code}: simulated once {}", simulated.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
+            // println!("{code}: simulated once {}", simulated_solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
+            // let simulated = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(result.chars()).filter_map(identity)).filter_map(identity).collect::<String>();
+            // let simulated_solution = Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(solution.chars()).filter_map(identity)).filter_map(identity).collect::<String>();
+            // println!("{code}: simulated twice {}", simulated.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
+            // println!("{code}: simulated twice {}", simulated_solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
+            // let simulated = Simulate::<_, NumericKeypad<Chars<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(result.chars()).filter_map(identity)).filter_map(identity)).filter_map(identity).collect::<String>();
+            // let simulated_solution = Simulate::<_, NumericKeypad<Chars<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(Simulate::<_, DirectionalKeypad<Combination<'_>>>::new(solution.chars()).filter_map(identity)).filter_map(identity)).filter_map(identity).collect::<String>();
+            // println!("{code}: simulated thrice {}", simulated.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
+            // println!("{code}: simulated thrice {}", simulated_solution.chars().map(|symbol| if symbol == 'A' { symbol.bright_white().bold().to_string() } else { symbol.to_string() }).collect::<String>());
             code_num * result.len()
         })
         .sum();
@@ -580,7 +642,7 @@ pub fn process_part2(input: &Input) -> eyre::Result<usize> {
 
             let parts = NumericKeypad::new(code.chars()).collect::<Vec<_>>();
             // println!("{code} {parts:?}");
-            let combinations = Combinations::new(&parts);
+            let combinations = Combinations::new(parts);
             let min_length = combinations.clone()
                 .map(|combination| combination.len())
                 .min()
@@ -592,12 +654,13 @@ pub fn process_part2(input: &Input) -> eyre::Result<usize> {
             for generation in 0..26 {
                 let mut min_length = usize::MAX;
                 while let Some(steps) = current.pop() {
-                    let parts = DirectionalKeypad::new(steps).collect::<Vec<_>>().leak();
+                    let parts = DirectionalKeypad::new(steps).collect::<Vec<_>>();
                     println!("{code} {generation} {} {}", current.len(), parts.len());
                     let combinations = Combinations::new(parts)
                         .filter(|combination| combination.len() <= min_length)
+                        .unique()
                         .min_set_by(|a, b| a.len().cmp(&b.len()));
-                    assert!(combinations.iter().all_unique());
+                    // assert!(combinations.iter().all_unique());
                     if combinations.len() == 0 {
                         continue;
                     }
@@ -654,12 +717,12 @@ pub async fn run() -> eyre::Result<()> {
         let start1 = SystemTime::now();
         let result1 = process_part1(&input)?;
         let end1 = SystemTime::now();
-        // let start2 = SystemTime::now();
-        // let result2 = process_part2(&input)?;
-        // let end2 = SystemTime::now();
+        let start2 = SystemTime::now();
+        let result2 = process_part2(&input)?;
+        let end2 = SystemTime::now();
         println!("{DAY} result:");
         println!("  part 1: {result1} in {:?}", end1.duration_since(start1).unwrap());
-        // println!("  part 2: {result2} in {:?}", end2.duration_since(start2).unwrap());
+        println!("  part 2: {result2} in {:?}", end2.duration_since(start2).unwrap());
         Ok(())
     }
         .instrument(day_span.or_current())
